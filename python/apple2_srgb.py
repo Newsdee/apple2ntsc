@@ -323,15 +323,16 @@ def print_result(brightness, picture, color, hue, err, MAXTRY,
     print ("RMS ∆E = %.8f" % err)
     print ("max tries = %d" % MAXTRY)
     print('')
-    print (" BASIC      CIE 1931 xyY Apple //e     sRGB    //e   IIgs    sRGB     CIE 1931 xyY Apple IIgs    CIEDE2000")
+    print ("BASIC       CIE 1931 xyY Apple //e     sRGB    //e   IIgs    sRGB     CIE 1931 xyY Apple IIgs    CIEDE2000")
+    print ("--------    -------------------------  ------- ----- ------  -------- -----------------------    ---------")
     for c in range(16):
         line = ''
         line += 'COLOR=%d' % c
         if c < 10:
             line += ' '
-        line += '  x=%.4f' % xc[c]
-        line += '  y=%.4f' % yc[c]
-        line += '  Y=%.4f' % ycap_c[c]
+        line += '    x=%.3f' % xc[c]
+        line += '  y=%.3f' % yc[c]
+        line += '  Y=%.3f' % ycap_c[c]
         line += '  #\x1b[31m' + strhex(rd[c])
         line += '\x1b[32m' + strhex(gr[c])
         line += '\x1b[34m' + strhex(bl[c])
@@ -343,15 +344,15 @@ def print_result(brightness, picture, color, hue, err, MAXTRY,
         line += ansi_rgb(riigs[c], giigs[c], biigs[c])
         line += '      '
         line += '\x1b[49m '
-        line += '  #\x1b[31m' + strhex(riigs[c])
+        line += ' #\x1b[31m' + strhex(riigs[c])
         line += '\x1b[32m' + strhex(giigs[c])
         line += '\x1b[34m' + strhex(biigs[c])
         line += '\x1b[39m '
-        line += ' x=%.4f' % xiigs[c]
-        line += ' y=%.4f' % yiigs[c]
-        line += ' Y=%.4f' % y_cap_iigs[c]
+        line += ' x=%.3f' % xiigs[c]
+        line += ' y=%.3f' % yiigs[c]
+        line += ' Y=%.3f' % y_cap_iigs[c]
         # display per-color Delta-E value
-        line += '  ∆E=%.4f' % delta_e[c]
+        line += '    ∆E=%.3f' % delta_e[c]
         print (line)
 
 def main_search(BRIGHTNESS, PICTURE, COLOR, HUE):
