@@ -21,11 +21,11 @@ def sqr(x):
 
 def cbrt(x):
     """cubic root"""
-    return x**(1./3.)    
+    return math.pow(x, 1./3.)
 
 def odd(n):
     '''check if a number is odd, i.e. lowest bit is set n binary format'''
-    return (n % 2) == 0
+    return bool(n % 2)
 
 def sar(n):
     """shift arithmetic right"""
@@ -52,13 +52,17 @@ C_180_OVER_PI = 180. / math.pi
 C_PI_OVER_180 = math.pi / 180.
 def darctan2(x,y):
     """arctan2 in degrees"""
-    return C_180_OVER_PI * math.atan2(x, y)
+    #return C_180_OVER_PI * math.atan2(x, y)
+    return math.atan2(x, y)
+
 def dcos(x):
     """cos in degrees"""
-    return math.cos(C_PI_OVER_180*x)
+    return math.cos(x)
+    #return math.cos(C_PI_OVER_180*x)
 def dsin(x):
     """sin in degrees"""
-    return math.sin(C_PI_OVER_180*x)
+    return math.sin(x)
+    #return math.sin(C_PI_OVER_180*x)
 
 # Undo gamma correction, according to SMPTE-170M gamma formula.
 # But derive the constants directly to get full precision.
@@ -375,8 +379,8 @@ def main_search(BRIGHTNESS, PICTURE, COLOR, HUE):
     rd = [0.] * 16
     gr = [0.] * 16
     bl = [0.] * 16
-    #while attempt <= (GLOBALSCALE + 1)*8:
-    for loops in range(10):
+    while attempt <= (GLOBALSCALE + 1)*8:
+    #for loops in range(10):
         old_brightness = brightness
         old_picture = picture
         old_color = color
@@ -394,7 +398,7 @@ def main_search(BRIGHTNESS, PICTURE, COLOR, HUE):
             # Any change that doesn't imrpove the result is reversed and the next try is started;
             # if it does improve, use new values as the next baseline,
             # and go back eight tries (one digit).
-            inc = pow(10, -int(attempt/8.))
+            inc = math.pow(10, -int(attempt/8.))
             if odd(attempt):
                 inc = -inc
             # py port note:
