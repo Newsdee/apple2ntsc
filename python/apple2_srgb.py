@@ -33,7 +33,7 @@ def sar(n):
 
 def strhex(n):
     """print two-digit hex value between 00 and ff"""
-    return '0x{0:02x}'.format(int(n)).upper()
+    return '{0:02x}'.format(int(n)).upper()
 
 def ansi_rgb(r, g, b):
     """returns escape ANSI code for a given RGB value"""
@@ -48,7 +48,7 @@ def clamp(x):
     return x
 
 # Degrees-based trigonometry
-C_180_OVER_PI = 180 / math.pi
+C_180_OVER_PI = 180. / math.pi
 C_PI_OVER_180 = math.pi / 180.
 def darctan2(x,y):
     """arctan2 in degrees"""
@@ -191,25 +191,25 @@ rc[15] = 0xF; gc[15] = 0xF; bc[15] = 0xF
 
 # Convert white point from xyY (with Y=1) to XYZ
 XW = 0.3127 / 0.3290
-YW = 1
-ZW = (1 - 0.3127 - 0.3290) / 0.3290
-# functions for converting from ZYZ to L*a*b
-def fxyz(v):
+YW = 1.0
+ZW = (1.0 - 0.3127 - 0.3290) / 0.3290
+# functions for converting from XYZ to L*a*b*
+def fxyz(val):
     '''convert xyz'''
-    if v > 216./24389.:
-        return cbrt(v)
-    return (24389. / 27. * v + 16.) / 116.
-def _fx(x):
-    return fxyz(x / XW)
-def _fy(y):
-    return fxyz(y / YW)
-def _fz(z):
-    return fxyz(z / ZW)
+    if val > 216./24389.:
+        return cbrt(val)
+    return (24389. / 27. * val + 16.) / 116.
+def _fx(xval):
+    return fxyz(xval / XW)
+def _fy(yval):
+    return fxyz(yval / YW)
+def _fz(zval):
+    return fxyz(zval / ZW)
 
-def limitprod(x, y):
+def limitprod(x, yval):
     """go from "analog" 0.0 to 1.0 value to "digital" 8 or 16 bit value"""
-    x = int(clamp(x) * y)
-    if x == y:
+    x = int(clamp(x) * yval)
+    if x == yval:
         x -= 1
     return x
 
@@ -264,18 +264,18 @@ for c in range(0, 16):
 # For the 4 colorful Hi-Res colors, which are 1/2 duty cycle (square) rectangular waves,
 # it's actually 2/pi but that is taken care of by setting BOTH u and v to +/- sr2op, which
 # makes the TOTAL vector length 2/pi according to the Theorem of Pythagoras, just as it should be.
-sr2op = math.sqrt(2) / math.pi
+sr2op = math.sqrt(2.0) / math.pi
 
 # Calculate Y, U, V for the Apple II colors from signal shape
 # (assuming it to be perfectly rectangular)
 y = [0.] * 16
 u = [0.] * 16
 v = [0.] * 16
-for c in range(0, 16):
+for c in range(16):
     # start with Y = U = V = 0
-    cy = 0
-    cu = 0
-    cv = 0
+    cy = 0.0
+    cu = 0.0
+    cv = 0.0
     # add up Y, I, and V for the "basic" colors contained 
     # in a given color's 4-bit pattern (i.e. the dark colors)
     h = c
@@ -302,21 +302,66 @@ for c in range(0, 16):
 
 # Starting values for the four NTSC monitor knobs. You can put
 # the better values in the comments here to make it converge faster.
-BRIGHTNESS =  0 #  0.045851297039046863657017
-PICTURE    =  1 #  0.892080981320251448772421
-COLOR      =  1 #  0.784866029442122319724180
-HUE        =  0 # -0.645936288431288302486169
+BRIGHTNESS =  0.045851297039046863657017 #0 #  0.045851297039046863657017
+PICTURE    =  0.892080981320251448772421 # 1 #  0.892080981320251448772421
+COLOR      =  0.784866029442122319724180 # 1 #  0.784866029442122319724180
+HUE        =  -0.645936288431288302486169 # 0 # -0.645936288431288302486169
 
-# Helper values, pre-initialized to prevent nonsense result at start
+# Helper values, pre-initialized sto prevent nonsense result at start
 MINERR     = 15*15*16
 
-def main_search():
+def print_result(brightness, picture, color, hue, err, MAXTRY,
+                 xc, yc, ycap_c, rd, gr, bl, 
+                 riigs, giigs, biigs, 
+                 xiigs, yiigs, y_cap_iigs, delta_e):
+    """prints the result of calculation"""
+    print('')
+    print ("brightness= %.8f" % brightness)
+    print ("picture = %.8f" % picture)
+    print ("color = %.8f" % color)
+    print ("hue = %.8f" % hue)
+    print ("RMS ∆E = %.8f" % err)
+    print ("max tries = %d" % MAXTRY)
+    print('')
+    print (" BASIC      CIE 1931 xyY Apple //e     sRGB    //e   IIgs    sRGB     CIE 1931 xyY Apple IIgs    CIEDE2000")
+    for c in range(16):
+        line = ''
+        line += 'COLOR=%d' % c
+        if c < 10:
+            line += ' '
+        line += '  x=%.4f' % xc[c]
+        line += '  y=%.4f' % yc[c]
+        line += '  Y=%.4f' % ycap_c[c]
+        line += '  #\x1b[31m' + strhex(rd[c])
+        line += '\x1b[32m' + strhex(gr[c])
+        line += '\x1b[34m' + strhex(bl[c])
+        line += '\x1b[39m '
+        # Directly display colors for calculated and for
+        # IIGS color values using some ANSI escape magic.
+        line += ansi_rgb(rd[c], gr[c], bl[c])
+        line += '      '
+        line += ansi_rgb(riigs[c], giigs[c], biigs[c])
+        line += '      '
+        line += '\x1b[49m '
+        line += '  #\x1b[31m' + strhex(riigs[c])
+        line += '\x1b[32m' + strhex(giigs[c])
+        line += '\x1b[34m' + strhex(biigs[c])
+        line += '\x1b[39m '
+        line += ' x=%.4f' % xiigs[c]
+        line += ' y=%.4f' % yiigs[c]
+        line += ' Y=%.4f' % y_cap_iigs[c]
+        # display per-color Delta-E value
+        line += '  ∆E=%.4f' % delta_e[c]
+        print (line)
+
+def main_search(BRIGHTNESS, PICTURE, COLOR, HUE):
     """
     Main search loop. Find the best possible match for Apple IIgs colors
     that you can get from turning the four knobs of a standard
     NTSC monitor fed with an Apple //e type signal.
     """
     MAXTRY = 7
+    MINERR = 15.*15.*16.*100.
     brightness = BRIGHTNESS
     picture = PICTURE
     color = COLOR
@@ -329,7 +374,8 @@ def main_search():
     rd = [0.] * 16
     gr = [0.] * 16
     bl = [0.] * 16
-    while attempt <= (GLOBALSCALE + 1)*8:
+    #while attempt <= (GLOBALSCALE + 1)*8:
+    for loops in range(10):
         old_brightness = brightness
         old_picture = picture
         old_color = color
@@ -465,63 +511,25 @@ def main_search():
             gr[c] = limitprod(g, 256)
             bl[c] = limitprod(b, 256)
         if err < MINERR:
-            minerr = err
+            MINERR = err # ensure we don't go lower
             if attempt > MAXTRY:
                 MAXTRY = attempt
             attempt = 0
             err = math.sqrt(err/16.) #  Calc root of mean squared error 
-            print('')
-            print ("brightness= %.f" % brightness)
-            print ("picture = %.f" % picture)
-            print ("color = %.f" % color)
-            print ("hue = %.f" % hue)
-            print ("RMS ∆E = %.f" % err)
-            print ("max tries = %d" % MAXTRY)
-            print('')
-            print (" BASIC      CIE 1931 xyY Apple //e     sRGB    //e   IIgs    sRGB     CIE 1931 xyY Apple IIgs    CIEDE2000")
-            print ("--------  --------------------------  ------- ------------  -------  --------------------------  ----------")
-            for c in range(16):
-                # output 16 0-1 results as six-digit hex RGB values,
-                # two digits each for R, for G and for B.
-                # py port notE: oriignal used ANSII colors, ignored here
-                line = ''
-                line += 'COLOR=%d' % c
-                if c < 10:
-                    line += ' '
-                line += '  x=%.f' % xc[c]
-                line += '  y=%.f' % yc[c]
-                line += '  Y=%.f' % ycap_c[c]
-                line += '  \x1b[31m' + strhex(rd[c])
-                line += '  \x1b[32m' + strhex(gr[c])
-                line += '  \x1b[34m' + strhex(bl[c])
-                line += '\x1b[39m '
-                # Directly display colors for calculated and for
-                # IIGS color values using some ANSI escape magic.
-                line += ansi_rgb(rd[c], gr[c], bl[c])
-                line += '|     '
-                line += ansi_rgb(riigs[c], giigs[c], biigs[c])
-                line += '||    '
-                line += '\x1b[49m '
-                line += '  \x1b[31m' + strhex(riigs[c])
-                line += '  \x1b[32m' + strhex(giigs[c])
-                line += '  \x1b[34m' + strhex(biigs[c])
-                line += '\x1b[39m '
-                line += ' x=%.f' % xiigs[c]
-                line += ' y=%.f' % yiigs[c]
-                line += ' Y=%.f' % y_cap_iigs[c]
-                # display per-color Delta-E value
-                line += '  ∆E=%.f' % delta_e[c]
-                print(line)
+            print_result(brightness=brightness, hue=hue, color=color, picture=picture,
+                         err=err, MAXTRY=MAXTRY,
+                         xc=xc, yc=yc, ycap_c=ycap_c, rd=rd, gr=gr, bl=bl,
+                         riigs=riigs, giigs=giigs, biigs=biigs, 
+                         xiigs=xiigs, yiigs=yiigs, y_cap_iigs=y_cap_iigs, delta_e=delta_e)
         else:
-            print("No improvement for attempt %d..." % attempt)
+            print("No improvement for attempt %d...  MinErr: %.4f (%.8f, %.8f, %.8f, %.8f)" % (attempt, MINERR, brightness, hue, color, picture))
             # no improvement, go back to previous values
             brightness = old_brightness
             picture = old_picture
             color = old_color
             hue = old_hue
             attempt += 1
-
-        
+    
 # run main function
-main_search()
+main_search(BRIGHTNESS=BRIGHTNESS, HUE=HUE, COLOR=COLOR, PICTURE=PICTURE)
 
